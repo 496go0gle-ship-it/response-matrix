@@ -94,6 +94,7 @@ class ResponseMatrix_DFS_WFS():
         Cy = np.empty((0, len(vcorrs)))
         excited_hcorrs = set()
         excited_vcorrs = set()
+        skipped_pairs = 0
 
         for pair in pairs:
             if len(pair) == 3:
@@ -114,6 +115,7 @@ class ResponseMatrix_DFS_WFS():
 
             if all_not_finite:
                 print(f"Skipping all-NaN files: {os.path.basename(fp)} / {os.path.basename(fm)}")
+                skipped_pairs += 1
                 continue
 
             if actuator_mode == "quadrupole_movers":
@@ -205,6 +207,13 @@ class ResponseMatrix_DFS_WFS():
         vcorrs = [corr for corr, keep in zip(vcorrs, vcol_mask) if keep]
         Cx, Cy = Cx[:, hcol_mask], Cy[:, vcol_mask]
 
+        if pairs and skipped_pairs == len(pairs) and len(Bx) == 0:
+            used = ", ".join(bpms) if bpms else "none"
+            raise RuntimeError(
+                "No DATA pair has orbit data at the usable BPMs.\n"
+                f"BPMs located in the recorded sequence after the selected correctors: {used}.\n"
+                "If the data was recorded before the BPM names were added to the sequence, "
+                "rebuild it with: python -m machine_interfaces_atf2.repair_ext_sequence <data folder>")
         row_mask = np.all(np.isfinite(Cx), axis=1) & np.all(np.isfinite(Cy), axis=1)
         if not np.any(row_mask):
             raise RuntimeError("No complete corrector readbacks available for response-matrix.")
