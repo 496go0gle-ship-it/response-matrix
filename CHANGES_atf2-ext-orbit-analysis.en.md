@@ -8,7 +8,8 @@ Japanese version: [CHANGES_atf2-ext-orbit-analysis.ja.md](CHANGES_atf2-ext-orbit
 | `8760772` | Improve data folder and selection handling in the response matrix GUI |
 | `0df71b8` | Explain why no orbit data is usable instead of a readback error |
 | `fc62455` | Skip quadrupole-mover pairs in the corrector response matrix |
-| (this commit) | Find quadrupole movers in the sequence for the triangular cut |
+| `48e06ae` | Find quadrupole movers in the sequence for the triangular cut |
+| (this commit) | Compute the quadrupole-mover response per setpoint, not per encoder reading |
 
 Files changed: `ComputeResponseMatrix_GUI.py`, `ComputeResponseMatrix_QM_GUI.py`, `response_matrix/ResponseMatrix_DFS_WFS.py`, `response_matrix/UI files/ComputeResponseMatrix_GUI.ui`.
 
@@ -61,3 +62,7 @@ python -m machine_interfaces_atf2.repair_ext_sequence ~/CERN-Flight_Simulator-Da
 ```
 
 With the repaired 2026-11-19 data, the response matrix of `ATF2_Ext_20261119_112700_Orbit` is computed for `ZH1X` and `ZV1X` with 50 BPMs (checked from Python, not in the GUI).
+
+## Quadrupole-mover response per setpoint (this commit, `_compute_qm_response_matrix`)
+- The mover change is taken from the setpoint (`xdes`/`ydes`) instead of the encoder (`xact`/`yact`); the encoder is used only when there is no setpoint.
+- Why: the BBAs (QM, and correctors + movers) command the setpoints, so the response must be per setpoint. In the 2026-11-19 machine data the x encoders of `QF1FF` and `QD0FF` count opposite to the setpoint (ratio -1.00), so with the encoder those two columns corrected in the wrong direction. For the other 19 movers and y the ratio is 1.00 +/- 0.01, so their results hardly change.

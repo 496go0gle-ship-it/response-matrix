@@ -135,8 +135,8 @@ class ResponseMatrix_DFS_WFS():
                         qidx = hcorrs.index(qname)
                         qxp = Sp.get_quadrupoles([qname])
                         qxm = Sm.get_quadrupoles([qname])
-                        Cx_p[qidx] = np.asarray(qxp.get('xact', qxp.get('xdes', [0.0])), dtype=float)[0]
-                        Cx_m[qidx] = np.asarray(qxm.get('xact', qxm.get('xdes', [0.0])), dtype=float)[0]
+                        Cx_p[qidx] = np.asarray(qxp.get('xdes', qxp.get('xact', [0.0])), dtype=float)[0]
+                        Cx_m[qidx] = np.asarray(qxm.get('xdes', qxm.get('xact', [0.0])), dtype=float)[0]
                     else:
                         continue
                 elif str(tag).endswith("_y"):
@@ -149,8 +149,8 @@ class ResponseMatrix_DFS_WFS():
                         qidx = vcorrs.index(qname)
                         qyp = Sp.get_quadrupoles([qname])
                         qym = Sm.get_quadrupoles([qname])
-                        Cy_p[qidx] = np.asarray(qyp.get('yact', qyp.get('ydes', [0.0])), dtype=float)[0]
-                        Cy_m[qidx] = np.asarray(qym.get('yact', qym.get('ydes', [0.0])), dtype=float)[0]
+                        Cy_p[qidx] = np.asarray(qyp.get('ydes', qyp.get('yact', [0.0])), dtype=float)[0]
+                        Cy_m[qidx] = np.asarray(qym.get('ydes', qym.get('yact', [0.0])), dtype=float)[0]
                     else:
                         continue
                 else:
@@ -571,12 +571,15 @@ class ResponseMatrix_DFS_WFS():
         Bx_rows, By_rows = [], []
 
         def qval(state, qname, axis):
+            # The setpoint, not the encoder: BBA commands setpoints, so the response must be per
+            # unit of setpoint. On ATF2 the x encoders of QF1FF and QD0FF count opposite to the
+            # setpoint (2026-11-19), which made those columns correct in the wrong direction.
             qdata = state.get_quadrupoles([qname])
-            keys = ("xact", "xdes") if axis == "x" else ("yact", "ydes")
+            keys = ("xdes", "xact") if axis == "x" else ("ydes", "yact")
             for key in keys:
                 if key in qdata:
                     arr = np.asarray(qdata[key], dtype=float).ravel()
-                    if arr.size:
+                    if arr.size and np.isfinite(arr[0]):
                         return float(arr[0])
             raise RuntimeError(f"No {axis} mover value for {qname}")
         for pair in pairs:

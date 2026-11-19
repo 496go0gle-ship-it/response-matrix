@@ -8,7 +8,8 @@
 | `8760772` | 応答行列 GUI のデータフォルダと選択ファイルの扱いを改善 |
 | `0df71b8` | 使える軌道データがないとき、補正電磁石のエラーではなく原因を表示する |
 | `fc62455` | 補正電磁石用の応答行列で、四極ムーバーのペアを読み飛ばす |
-| （このコミット） | 三角化のために、並びの中から四極ムーバーの位置を見つける |
+| `48e06ae` | 三角化のために、並びの中から四極ムーバーの位置を見つける |
+| （このコミット） | 四極ムーバーの応答を、エンコーダではなく設定値あたりで計算する |
 
 変更したファイル：`ComputeResponseMatrix_GUI.py`、`ComputeResponseMatrix_QM_GUI.py`、`response_matrix/ResponseMatrix_DFS_WFS.py`、`response_matrix/UI files/ComputeResponseMatrix_GUI.ui`
 
@@ -61,3 +62,7 @@ python -m machine_interfaces_atf2.repair_ext_sequence ~/CERN-Flight_Simulator-Da
 ```
 
 修復した 2026-11-19 のデータで、`ATF2_Ext_20261119_112700_Orbit` について `ZH1X` と `ZV1X` の応答行列が50台の BPM で計算できました（Python から確認。GUI では未確認）。
+
+## 四極ムーバーの応答は設定値あたり（このコミット、`_compute_qm_response_matrix`）
+- ムーバーの変化量に、エンコーダ（`xact`/`yact`）ではなく設定値（`xdes`/`ydes`）を使います。設定値が無いときだけエンコーダを使います。
+- 理由：BBA（QM 版と補正電磁石＋ムーバー版）はムーバーを設定値で動かすので、応答も設定値あたりでないと合いません。2026-11-19 の実機データでは、`QF1FF` と `QD0FF` の x エンコーダが設定値と逆向き（比 −1.00）に数えていて、エンコーダ基準の応答ではこの2列の補正の向きが逆になっていました。他の19台と y の比は 1.00 ± 0.01 なので、それらの結果はほぼ変わりません。
