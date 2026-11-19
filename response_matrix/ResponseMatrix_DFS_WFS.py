@@ -66,6 +66,17 @@ class ResponseMatrix_DFS_WFS():
             hcorrs = [c for c in correctors if c in S.hcorrectors_names]
             vcorrs = [c for c in correctors if c in S.vcorrectors_names]
 
+        # Devices missing from the recorded sequence cannot be ordered along the beamline
+        located = set(self.sequence)
+        unlocated = [name for name in list(bpms) + hcorrs + vcorrs if name not in located]
+        if unlocated:
+            print(f"Ignoring devices without a beamline position in the recorded sequence: {unlocated}")
+            bpms = [bpm for bpm in bpms if bpm in located]
+            hcorrs = [corr for corr in hcorrs if corr in located]
+            vcorrs = [corr for corr in vcorrs if corr in located]
+        if not bpms:
+            raise RuntimeError("None of the selected BPMs is in the recorded beamline sequence.")
+
         # Pick all correctors preceding the last bpm
         hcorrs = [corr for corr in hcorrs if self.sequence.index(corr) < self.sequence.index(bpms[-1])]
         vcorrs = [corr for corr in vcorrs if self.sequence.index(corr) < self.sequence.index(bpms[-1])]

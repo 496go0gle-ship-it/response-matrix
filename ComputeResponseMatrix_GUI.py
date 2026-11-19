@@ -78,8 +78,12 @@ class MainWindow(QMainWindow, SaveOrLoad, ResponseMatrix_DFS_WFS):
         self.diff_checkbox.toggled.connect(self._compute_difference_clicked)
         self._compute_difference_clicked(self.diff_checkbox.isChecked())
         self.plot_singular_values_button.clicked.connect(self._plot_singular_values)
+        self.save_correctors_button.clicked.connect(self.__save_correctors_button_clicked)
         self.load_correctors_button.clicked.connect(self.__load_correctors_button_clicked)
+        self.clear_correctors_button.clicked.connect(self.__clear_correctors_button_clicked)
+        self.save_bpms_button.clicked.connect(self.__save_bpms_button_clicked)
         self.load_bpms_button.clicked.connect(self.__load_bpms_button_clicked)
+        self.clear_bpms_button.clicked.connect(self.__clear_bpms_button_clicked)
         # self.hcorrector_prefixes=("zh", "zx")
         # self.vcorrector_prefixes=("zv")
 
@@ -167,8 +171,7 @@ class MainWindow(QMainWindow, SaveOrLoad, ResponseMatrix_DFS_WFS):
         directory=self._expand_path(directory)
         datafiles=sorted(glob.glob(os.path.join(directory,"DATA*.pkl")))
         if not datafiles:
-            QMessageBox.warning(self, "Error", "No data files found")
-            return
+            return  # caller reports the missing DATA pairs
         S=State(filename=datafiles[0])
         self.sequence=S.get_sequence()
         correctors = [self.correctors_list.item(i).text() for i in range(self.correctors_list.count()) if self.correctors_list.item(i).isSelected()]
@@ -234,14 +237,32 @@ class MainWindow(QMainWindow, SaveOrLoad, ResponseMatrix_DFS_WFS):
         plt.legend()
         plt.show(block=False)
 
+    def _default_data_dir(self):
+        # ~/CERN-Flight_Simulator-Data, else the data folder next to the repositories
+        repos_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(response_matrix.__file__))))
+        candidates = (
+            os.path.expanduser("~/CERN-Flight_Simulator-Data"),
+            os.path.join(repos_dir, "CERN-Flight_Simulator-Data"),
+            self._expand_path(self.data_directory_1.text()),
+            self.cwd,
+        )
+        return next((d for d in candidates if os.path.isdir(d)), self.cwd)
+
     def _pick_directory_with_data(self,line_edit):
-        # base=self._expand_path(line_edit.text() or self.cwd) or self.cwd
-        default_dir = f"~/CERN-Flight_Simulator-Data/"
-        default_dir = os.path.expanduser(os.path.expandvars(default_dir))
-        folder=QFileDialog.getExistingDirectory(self,"Select data directory",default_dir)
+        folder=QFileDialog.getExistingDirectory(self,"Select data directory",self._default_data_dir())
         if not folder:
             return
         line_edit.setText(folder)
+        if not glob.glob(os.path.join(folder, "DATA*.pkl")):
+            with_data = sorted(os.path.basename(os.path.dirname(d)) for d in glob.glob(os.path.join(folder, "*", "DATA*.pkl")))
+            message = f"No DATA*.pkl files in\n{folder}"
+            if with_data:
+                message += "\n\nSubfolders with data (select one of them):\n" + "\n".join(dict.fromkeys(with_data))
+            QMessageBox.warning(self, "No data files", message)
+            if line_edit is self.data_directory_1:
+                self.correctors_list.clear()
+                self.bpms_list.clear()
+            return
         if line_edit is self.data_directory_1:
             self._load_lists_from_directory(folder)
 
@@ -251,6 +272,7 @@ class MainWindow(QMainWindow, SaveOrLoad, ResponseMatrix_DFS_WFS):
         if not datafiles:
             return
         S=State(filename=datafiles[0])
+        self.initial_state=S  # fallback selection for Load.. when no selection file is chosen
         self.sequence=S.get_sequence()
         self.bpms=list(S.get_bpms()["names"])
 
@@ -278,20 +300,28 @@ class MainWindow(QMainWindow, SaveOrLoad, ResponseMatrix_DFS_WFS):
         R.By = R1.By-R2.By
         return R
 
+    def _selection_dir(self):
+        # Selection files (correctors.txt / bpms.txt) live next to the data, as SysID writes them
+        return self._expand_path(self.data_directory_1.text() or self.cwd)
+
     def __save_correctors_button_clicked(self):
-        self._save_correctors()
+        self._saving_func(elements_list=self.correctors_list, filename="correctors.txt", saving_name="Save Correctors", base_dir=self._selection_dir())
 
     def __load_correctors_button_clicked(self):
-        self._load_correctors()
+        if self.correctors_list.count() == 0:
+            return
+        self._loading_func(elements_list=self.correctors_list, filename="correctors.txt", loading_name="Load Correctors", base_dir=self._selection_dir())
 
     def __clear_correctors_button_clicked(self):
         self.correctors_list.clearSelection()
 
     def __save_bpms_button_clicked(self):
-        self._save_bpms()
+        self._saving_func(elements_list=self.bpms_list, filename="bpms.txt", saving_name="Save BPMs", base_dir=self._selection_dir())
 
     def __load_bpms_button_clicked(self):
-        self._load_bpms()
+        if self.bpms_list.count() == 0:
+            return
+        self._loading_func(elements_list=self.bpms_list, filename="bpms.txt", loading_name="Load BPMs", base_dir=self._selection_dir())
 
     def __clear_bpms_button_clicked(self):
         self.bpms_list.clearSelection()

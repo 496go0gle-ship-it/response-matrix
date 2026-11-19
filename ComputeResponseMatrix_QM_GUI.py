@@ -28,6 +28,7 @@ class MainWindow(CorrectorResponseMatrixWindow):
         if not datafiles:
             return
         state = State(filename=datafiles[0])
+        self.initial_state = state
         self.sequence = state.get_sequence()
         self.bpms = list(state.get_bpms()["names"])
         self.correctors = self._quadrupole_movers_from_datafiles(datafiles)

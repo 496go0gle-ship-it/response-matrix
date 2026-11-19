@@ -222,8 +222,7 @@
        <widget class="QGroupBox" name="devicesGroup">
         <property name="styleSheet">
          <string notr="true">QGroupBox#devicesGroup {
-    background-color: rgb(245, 245, 245);
-    border: 1px solid rgb(210, 210, 210);
+    border: 1px solid palette(mid);
     border-radius: 6px;
     margin-top: 8px;
     padding-top: 6px;
@@ -254,8 +253,7 @@ QGroupBox#devicesGroup::title {
           <widget class="QGroupBox" name="correctorsGroup">
            <property name="styleSheet">
             <string notr="true">QGroupBox#correctorsGroup {
-    background-color: rgb(245, 245, 245);
-    border: 1px solid rgb(210, 210, 210);
+    border: 1px solid palette(mid);
     border-radius: 6px;
     margin-top: 8px;
     padding-top: 6px;
@@ -321,8 +319,7 @@ QGroupBox#correctorsGroup::title {
           <widget class="QGroupBox" name="bpmsGroup">
            <property name="styleSheet">
             <string notr="true">QGroupBox#bpmsGroup {
-    background-color: rgb(245, 245, 245);
-    border: 1px solid rgb(210, 210, 210);
+    border: 1px solid palette(mid);
     border-radius: 6px;
     margin-top: 8px;
     padding-top: 6px;
