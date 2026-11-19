@@ -6,6 +6,7 @@
 | コミット | 概要 |
 |---|---|
 | `8760772` | 応答行列 GUI のデータフォルダと選択ファイルの扱いを改善 |
+| `0df71b8` | 使える軌道データがないとき、補正電磁石のエラーではなく原因を表示する |
 
 変更したファイル：`ComputeResponseMatrix_GUI.py`、`ComputeResponseMatrix_QM_GUI.py`、`response_matrix/ResponseMatrix_DFS_WFS.py`、`response_matrix/UI files/ComputeResponseMatrix_GUI.ui`
 
@@ -36,5 +37,16 @@
 - 変更した Python ファイルはコンパイルが通ります（`python -m py_compile`）。
 - GUI を実際に開いての動作確認はしていません。
 
-## 残っている問題
-- 2026-11-19 の ATF2 Ext データでは、応答行列の計算がまだ「No complete corrector readbacks available for response-matrix.」というエラーで止まります。このデータに記録された並びには BPM が2台（`MB2X`、`MSF1FF`、どちらも値が0）しか入っておらず、選んだ BPM がすべて無視されるためです。本当の原因は並びに BPM 名がないことで、`machine-interfaces` のブランチで今後の記録については直ります。この場合のエラーメッセージは原因と合っておらず、誤解を招きます。
+## 使える軌道データがないときのエラー文（`0df71b8`、`response_matrix/ResponseMatrix_DFS_WFS.py`）
+- 使える BPM に軌道がなく、すべての DATA ペアが飛ばされたとき、`_compute_response_matrix()` は「No DATA pair has orbit data at the usable BPMs」というエラーを出します。使えた BPM の一覧と、`python -m machine_interfaces_atf2.repair_ext_sequence` での修復方法も表示します。
+- これまでは、その後の処理で「No complete corrector readbacks available for response-matrix.」と表示され、補正電磁石に問題があるように見えていました。
+- 2026-11-19 の ATF2 Ext データで起きていた現象です。記録された並びには `MB2X` と `MSF1FF` しかなく、選んだ補正電磁石より後ろの BPM に絞ると、値が0の `MSF1FF` しか残りませんでした。
+
+## 並びの修正前に記録された ATF2 Ext データを使うには
+先に並びを作り直し（`machine-interfaces` のブランチにあるツール）、GUI では `_sequence_fixed` のコピーの中のフォルダを選んでください。
+
+```bash
+python -m machine_interfaces_atf2.repair_ext_sequence ~/CERN-Flight_Simulator-Data
+```
+
+修復した 2026-11-19 のデータで、`ATF2_Ext_20261119_112700_Orbit` について `ZH1X` と `ZV1X` の応答行列が50台の BPM で計算できました（Python から確認。GUI では未確認）。

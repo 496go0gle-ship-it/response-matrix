@@ -6,6 +6,7 @@ Japanese version: [CHANGES_atf2-ext-orbit-analysis.ja.md](CHANGES_atf2-ext-orbit
 | Commit | Summary |
 |---|---|
 | `8760772` | Improve data folder and selection handling in the response matrix GUI |
+| `0df71b8` | Explain why no orbit data is usable instead of a readback error |
 
 Files changed: `ComputeResponseMatrix_GUI.py`, `ComputeResponseMatrix_QM_GUI.py`, `response_matrix/ResponseMatrix_DFS_WFS.py`, `response_matrix/UI files/ComputeResponseMatrix_GUI.ui`.
 
@@ -36,5 +37,16 @@ This branch goes together with the branch of the same name in `machine-interface
 - The changed Python files compile (`python -m py_compile`).
 - The GUI has not been opened to test these changes interactively.
 
-## Known issue
-- With the 2026-11-19 ATF2 Ext data, the response matrix still fails with "No complete corrector readbacks available for response-matrix." The recorded sequence of that data contains only two BPMs (`MB2X`, `MSF1FF`), both reading 0, so every selected BPM is ignored. The real cause is the missing BPM names in the sequence, which the `machine-interfaces` branch fixes for new recordings; the error message itself is misleading in this case.
+## Clearer error when no orbit data is usable (`0df71b8`, `response_matrix/ResponseMatrix_DFS_WFS.py`)
+- When every DATA pair is skipped because the usable BPMs have no orbit, `_compute_response_matrix()` now raises "No DATA pair has orbit data at the usable BPMs", lists the BPMs that were usable, and points to `python -m machine_interfaces_atf2.repair_ext_sequence`.
+- Before, it failed later with "No complete corrector readbacks available for response-matrix.", which pointed at the correctors.
+- This happened with the 2026-11-19 ATF2 Ext data: its recorded sequence holds only `MB2X` and `MSF1FF`, and after keeping the BPMs downstream of the selected correctors only `MSF1FF` (reading 0) was left.
+
+## Using ATF2 Ext data recorded before the sequence fix
+Rebuild the sequence first (tool in the `machine-interfaces` branch), then select the folders in the `_sequence_fixed` copy:
+
+```bash
+python -m machine_interfaces_atf2.repair_ext_sequence ~/CERN-Flight_Simulator-Data
+```
+
+With the repaired 2026-11-19 data, the response matrix of `ATF2_Ext_20261119_112700_Orbit` is computed for `ZH1X` and `ZV1X` with 50 BPMs (checked from Python, not in the GUI).
