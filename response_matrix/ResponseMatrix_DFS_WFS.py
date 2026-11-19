@@ -95,6 +95,7 @@ class ResponseMatrix_DFS_WFS():
         excited_hcorrs = set()
         excited_vcorrs = set()
         skipped_pairs = 0
+        considered_pairs = 0
 
         for pair in pairs:
             if len(pair) == 3:
@@ -102,6 +103,11 @@ class ResponseMatrix_DFS_WFS():
             else:
                 fp, fm = pair
                 tag = ""
+            if actuator_mode != "quadrupole_movers" and str(tag).endswith(("_x", "_y")):
+                # Quadrupole-mover pair (DATA_<quad>_<x|y>_...) from a combined corrector + mover SysID:
+                # the correctors did not change, so it carries no corrector response.
+                continue
+            considered_pairs += 1
             Sp = State(filename=fp)
             Sm = State(filename=fm)
 
@@ -207,7 +213,7 @@ class ResponseMatrix_DFS_WFS():
         vcorrs = [corr for corr, keep in zip(vcorrs, vcol_mask) if keep]
         Cx, Cy = Cx[:, hcol_mask], Cy[:, vcol_mask]
 
-        if pairs and skipped_pairs == len(pairs) and len(Bx) == 0:
+        if considered_pairs and skipped_pairs == considered_pairs and len(Bx) == 0:
             used = ", ".join(bpms) if bpms else "none"
             raise RuntimeError(
                 "No DATA pair has orbit data at the usable BPMs.\n"

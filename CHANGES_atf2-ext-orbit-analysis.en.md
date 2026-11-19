@@ -42,6 +42,10 @@ This branch goes together with the branch of the same name in `machine-interface
 - Before, it failed later with "No complete corrector readbacks available for response-matrix.", which pointed at the correctors.
 - This happened with the 2026-11-19 ATF2 Ext data: its recorded sequence holds only `MB2X` and `MSF1FF`, and after keeping the BPMs downstream of the selected correctors only `MSF1FF` (reading 0) was left.
 
+## Folders from the combined corrector + mover SysID (`response_matrix/ResponseMatrix_DFS_WFS.py`)
+- In corrector mode, `_compute_response_matrix()` skips quadrupole-mover pairs (`DATA_<quad>_<x|y>_...`), which `SysID_corrector_and_mover_GUI.py` (branch `atf2-ext-orbit-analysis` of system-identification) writes next to the corrector pairs.
+- This does not change the result: in a mover pair the correctors keep their value and the orbit moves by +/- the same amount, which cancels in the least-squares fit (checked on a simulated folder: identical matrix, difference 6e-16). It avoids reading those files and keeps them out of the "no usable orbit" count.
+
 ## Using ATF2 Ext data recorded before the sequence fix
 Rebuild the sequence first (tool in the `machine-interfaces` branch), then select the folders in the `_sequence_fixed` copy:
 

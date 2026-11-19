@@ -42,6 +42,10 @@
 - これまでは、その後の処理で「No complete corrector readbacks available for response-matrix.」と表示され、補正電磁石に問題があるように見えていました。
 - 2026-11-19 の ATF2 Ext データで起きていた現象です。記録された並びには `MB2X` と `MSF1FF` しかなく、選んだ補正電磁石より後ろの BPM に絞ると、値が0の `MSF1FF` しか残りませんでした。
 
+## 補正電磁石とムーバーをまとめて測った SysID のフォルダ（`response_matrix/ResponseMatrix_DFS_WFS.py`）
+- 補正電磁石用の計算で、`_compute_response_matrix()` は四極ムーバーのペア（`DATA_<四極>_<x|y>_...`）を飛ばします。system-identification の `atf2-ext-orbit-analysis` ブランチにある `SysID_corrector_and_mover_GUI.py` が、補正電磁石のペアと同じフォルダに書くファイルです。
+- 計算結果は変わりません。ムーバーのペアでは補正電磁石の値が変わらず、軌道が ± に同じだけ動くので、最小二乗の計算で打ち消し合うためです（シミュレーションのフォルダで確認：行列は同一、差は 6×10⁻¹⁶）。これらのファイルを読み込まずに済み、「使える軌道データがない」の判定にも数えなくなります。
+
 ## 並びの修正前に記録された ATF2 Ext データを使うには
 先に並びを作り直し（`machine-interfaces` のブランチにあるツール）、GUI では `_sequence_fixed` のコピーの中のフォルダを選んでください。
 
