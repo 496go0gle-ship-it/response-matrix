@@ -7,6 +7,8 @@
 |---|---|
 | `8760772` | 応答行列 GUI のデータフォルダと選択ファイルの扱いを改善 |
 | `0df71b8` | 使える軌道データがないとき、補正電磁石のエラーではなく原因を表示する |
+| `fc62455` | 補正電磁石用の応答行列で、四極ムーバーのペアを読み飛ばす |
+| （このコミット） | 三角化のために、並びの中から四極ムーバーの位置を見つける |
 
 変更したファイル：`ComputeResponseMatrix_GUI.py`、`ComputeResponseMatrix_QM_GUI.py`、`response_matrix/ResponseMatrix_DFS_WFS.py`、`response_matrix/UI files/ComputeResponseMatrix_GUI.ui`
 
@@ -45,6 +47,11 @@
 ## 補正電磁石とムーバーをまとめて測った SysID のフォルダ（`response_matrix/ResponseMatrix_DFS_WFS.py`）
 - 補正電磁石用の計算で、`_compute_response_matrix()` は四極ムーバーのペア（`DATA_<四極>_<x|y>_...`）を飛ばします。system-identification の `atf2-ext-orbit-analysis` ブランチにある `SysID_corrector_and_mover_GUI.py` が、補正電磁石のペアと同じフォルダに書くファイルです。
 - 計算結果は変わりません。ムーバーのペアでは補正電磁石の値が変わらず、軌道が ± に同じだけ動くので、最小二乗の計算で打ち消し合うためです（シミュレーションのフォルダで確認：行列は同一、差は 6×10⁻¹⁶）。これらのファイルを読み込まずに済み、「使える軌道データがない」の判定にも数えなくなります。
+
+## 四極ムーバーの行列の三角化（`response_matrix/ResponseMatrix_DFS_WFS.py`、`_compute_qm_response_matrix`）
+- **問題：** `triangular=True`（`BBA_QM_GUI.py` は常にこれを使います）では、ムーバーより上流の BPM の応答を0にします。ムーバーの位置をその名前（`QM15FF`）で探していましたが、記録された並びにあるのは、その上の BPM（`MQM15FF`、ATF2 Ext の実機データ）か分割された要素（`QM15FF_1`、RF-Track）です。見つからないとムーバーが無限に下流にある扱いになり、すべての BPM が「上流」と判定されて、行列全体が0になっていました。既存の QM 版 BBA にも影響します。
+- **変更：** 位置を `QM15FF`、`QM15FF_1`、`MQM15FF` のうち並びにあるもので決めます。どれでも見つからないムーバーは、列を失う代わりに全 BPM を残します（メッセージを表示）。
+- **確認：** シミュレーションのフォルダで、各ムーバーの列がムーバーより下流でだけ0以外になり、最大値が三角化なしの場合と一致しました（例：`QM15FF` 0.194、`QD0FF` 0.0020）。
 
 ## 並びの修正前に記録された ATF2 Ext データを使うには
 先に並びを作り直し（`machine-interfaces` のブランチにあるツール）、GUI では `_sequence_fixed` のコピーの中のフォルダを選んでください。

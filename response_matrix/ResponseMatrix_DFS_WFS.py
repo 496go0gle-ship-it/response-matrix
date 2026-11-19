@@ -630,15 +630,24 @@ class ResponseMatrix_DFS_WFS():
             def sequence_pos(name):
                 return sequence_index.get(str(name), np.inf)
 
+            def mover_pos(q):
+                # The sequence may list the quadrupole itself (QM15FF), its slices (QM15FF_1, RF-Track)
+                # or only the BPM mounted on it (MQM15FF, ATF2 Ext machine data).
+                for candidate in (str(q), f"{q}_1", f"M{q}"):
+                    if candidate in sequence_index:
+                        return sequence_index[candidate]
+                print(f"Triangular cut skipped for {q}: not found in the recorded sequence")
+                return -np.inf  # unknown position: keep every BPM rather than zero the whole column
+
             for j, q in enumerate(qcorrs_x):
-                qpos = sequence_pos(q)
+                qpos = mover_pos(q)
                 for i, bpm in enumerate(bpms):
                     if sequence_pos(bpm) < qpos or str(bpm) == f"M{q}" or f"M{q}" in str(bpm):
                         Rxx[i, j] = 0.0
                         Ryx[i, j] = 0.0
 
             for j, q in enumerate(qcorrs_y):
-                qpos = sequence_pos(q)
+                qpos = mover_pos(q)
                 for i, bpm in enumerate(bpms):
                     if sequence_pos(bpm) < qpos or str(bpm) == f"M{q}" or f"M{q}" in str(bpm):
                         Rxy[i, j] = 0.0

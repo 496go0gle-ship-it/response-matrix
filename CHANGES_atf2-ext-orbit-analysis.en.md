@@ -7,6 +7,8 @@ Japanese version: [CHANGES_atf2-ext-orbit-analysis.ja.md](CHANGES_atf2-ext-orbit
 |---|---|
 | `8760772` | Improve data folder and selection handling in the response matrix GUI |
 | `0df71b8` | Explain why no orbit data is usable instead of a readback error |
+| `fc62455` | Skip quadrupole-mover pairs in the corrector response matrix |
+| (this commit) | Find quadrupole movers in the sequence for the triangular cut |
 
 Files changed: `ComputeResponseMatrix_GUI.py`, `ComputeResponseMatrix_QM_GUI.py`, `response_matrix/ResponseMatrix_DFS_WFS.py`, `response_matrix/UI files/ComputeResponseMatrix_GUI.ui`.
 
@@ -45,6 +47,11 @@ This branch goes together with the branch of the same name in `machine-interface
 ## Folders from the combined corrector + mover SysID (`response_matrix/ResponseMatrix_DFS_WFS.py`)
 - In corrector mode, `_compute_response_matrix()` skips quadrupole-mover pairs (`DATA_<quad>_<x|y>_...`), which `SysID_corrector_and_mover_GUI.py` (branch `atf2-ext-orbit-analysis` of system-identification) writes next to the corrector pairs.
 - This does not change the result: in a mover pair the correctors keep their value and the orbit moves by +/- the same amount, which cancels in the least-squares fit (checked on a simulated folder: identical matrix, difference 6e-16). It avoids reading those files and keeps them out of the "no usable orbit" count.
+
+## Triangular cut of the quadrupole-mover matrix (`response_matrix/ResponseMatrix_DFS_WFS.py`, `_compute_qm_response_matrix`)
+- **Problem:** with `triangular=True` (always used by `BBA_QM_GUI.py`), the response at BPMs upstream of a mover is set to zero. The mover's position was looked up by its own name (`QM15FF`), but the recorded sequence holds the BPM on it (`MQM15FF`, ATF2 Ext machine data) or its slices (`QM15FF_1`, RF-Track). Not found, the mover counted as infinitely far downstream, so every BPM was "upstream" and the whole matrix became zero. This affects the existing QM BBA too.
+- **Change:** the position is taken from `QM15FF`, `QM15FF_1` or `MQM15FF`, whichever the sequence has. A mover found under none of them keeps all its BPMs (a message is printed) instead of losing its column.
+- **Checked** on a simulated folder: each mover column is non-zero only downstream of the mover, with the same maximum as without the cut (e.g. `QM15FF` 0.194, `QD0FF` 0.0020).
 
 ## Using ATF2 Ext data recorded before the sequence fix
 Rebuild the sequence first (tool in the `machine-interfaces` branch), then select the folders in the `_sequence_fixed` copy:
