@@ -66,3 +66,8 @@ With the repaired 2026-11-19 data, the response matrix of `ATF2_Ext_20261119_112
 ## Quadrupole-mover response per setpoint (this commit, `_compute_qm_response_matrix`)
 - The mover change is taken from the setpoint (`xdes`/`ydes`) instead of the encoder (`xact`/`yact`); the encoder is used only when there is no setpoint.
 - Why: the BBAs (QM, and correctors + movers) command the setpoints, so the response must be per setpoint. In the 2026-11-19 machine data the x encoders of `QF1FF` and `QD0FF` count opposite to the setpoint (ratio -1.00), so with the encoder those two columns corrected in the wrong direction. For the other 19 movers and y the ratio is 1.00 +/- 0.01, so their results hardly change.
+
+## Leave out BPMs the snapshots did not record (`_compute_response_matrix`, this commit)
+- **Problem:** `State.get_orbit()` returns only the BPMs a snapshot recorded, in the recorded order. A selected BPM that was not recorded made the matrix rows and the orbit columns differ in number and stopped with a `ValueError` (for example, a folder made with the RF-Track model has none of the 14 IP-region BPMs). A selection order different from the recorded order also put rows against the wrong BPMs.
+- **Change:** BPMs that were not recorded are listed and left out, and the rest are ordered as recorded before the calculation.
+- **Checked:** with the machine's list of 67 BPMs, the model folder gives a matrix for 48 BPMs (it stopped before).

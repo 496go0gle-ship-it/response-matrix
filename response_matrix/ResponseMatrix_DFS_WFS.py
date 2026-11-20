@@ -77,6 +77,18 @@ class ResponseMatrix_DFS_WFS():
         if not bpms:
             raise RuntimeError("None of the selected BPMs is in the recorded beamline sequence.")
 
+        # State.get_orbit() returns only the BPMs the snapshots recorded, in the recorded order
+        # (a model folder from an RF-Track twin has no IP-region BPMs, for example): keep the
+        # matrix rows in that same order and leave out the BPMs that were not recorded.
+        recorded_bpms = [str(name) for name in S.get_bpms()["names"]]
+        missing_bpms = [bpm for bpm in bpms if bpm not in set(recorded_bpms)]
+        if missing_bpms:
+            print(f"Ignoring BPMs that the recorded snapshots do not contain: {missing_bpms}")
+        selected_bpms = set(bpms)
+        bpms = [bpm for bpm in recorded_bpms if bpm in selected_bpms]
+        if not bpms:
+            raise RuntimeError("None of the selected BPMs is in the recorded snapshots.")
+
         # Pick all correctors preceding the last bpm
         hcorrs = [corr for corr in hcorrs if self.sequence.index(corr) < self.sequence.index(bpms[-1])]
         vcorrs = [corr for corr in vcorrs if self.sequence.index(corr) < self.sequence.index(bpms[-1])]
